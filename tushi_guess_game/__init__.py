@@ -8,17 +8,45 @@ st.markdown(
     <style>
     body {
         background-color: black;
-        color: red;
+        color: yellow;
         font-family: 'Press Start 2P', cursive;
     }
     .title {
-        font-size: 50px;
-        color: red;
+        font-size: 60px;
+        color: yellow;
         text-align: center;
         font-family: 'Press Start 2P', cursive;
+        text-shadow: 2px 2px 5px blue;
+        margin-bottom: 0;
     }
     .header {
         font-size: 30px;
+        color: yellow;
+        text-align: center;
+        font-family: 'Press Start 2P', cursive;
+        text-shadow: 1px 1px 3px red;
+        margin-top: 0;
+    }
+    .stButton button {
+        background-color: blue;
+        color: yellow;
+        border-radius: 10px;
+        border: 2px solid yellow;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 16px;
+        padding: 10px;
+    }
+    .stNumberInput input {
+        background-color: blue;
+        color: yellow;
+        border-radius: 10px;
+        border: 2px solid yellow;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 16px;
+        padding: 5px;
+    }
+    .hint {
+        font-size: 20px;
         color: red;
         text-align: center;
         font-family: 'Press Start 2P', cursive;
@@ -33,7 +61,7 @@ st.markdown(
 st.markdown('<div class="title">Tushi\'s Guess the Number Game</div>', unsafe_allow_html=True)
 
 # Personalized header
-st.markdown('<div class="header">Welcome to the game, Samia Mollika Tushi!</div>', unsafe_allow_html=True)
+st.markdown('<div class="header">Welcome, Samia Mollika Tushi!</div>', unsafe_allow_html=True)
 
 # Difficulty level selector
 difficulty = st.selectbox('Select Difficulty Level:', ['Easy (1-50)', 'Medium (1-100)', 'Hard (1-200)'])
@@ -88,7 +116,7 @@ if st.button('Submit Guess'):
     # Provide a hint if too many attempts
     if st.session_state.attempts > 5 and not st.session_state.hint_provided:
         hint_range = st.session_state.number // 10 * 10
-        st.write(f'Hint: The number is between {hint_range} and {hint_range + 10}.')
+        st.write(f'<div class="hint">Hint: The number is between {hint_range} and {hint_range + 10}.</div>', unsafe_allow_html=True)
         st.session_state.hint_provided = True
 
 # Display the best score
