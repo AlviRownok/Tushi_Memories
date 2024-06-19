@@ -2,46 +2,29 @@ import streamlit as st
 import random
 import time
 
-# Define themes
-themes = {
-    "Default": {
-        "title_color": "#4CAF50",
-        "header_color": "#FF5733",
-        "font_family": "'Courier New', Courier, monospace",
-    },
-    "Dark": {
-        "title_color": "#FFFFFF",
-        "header_color": "#888888",
-        "font_family": "'Arial', sans-serif",
-    },
-    "Light": {
-        "title_color": "#000000",
-        "header_color": "#666666",
-        "font_family": "'Verdana', sans-serif",
-    },
-}
-
-# Select a theme
-theme = st.selectbox('Select Theme:', list(themes.keys()))
-selected_theme = themes[theme]
-
 # Custom CSS for styling
 st.markdown(
-    f"""
+    """
     <style>
-    .title {{
+    body {
+        background-color: black;
+        color: red;
+        font-family: 'Press Start 2P', cursive;
+    }
+    .title {
         font-size: 50px;
-        color: {selected_theme["title_color"]};
+        color: red;
         text-align: center;
-        font-family: {selected_theme["font_family"]};
-    }}
-    .header {{
+        font-family: 'Press Start 2P', cursive;
+    }
+    .header {
         font-size: 30px;
-        color: {selected_theme["header_color"]};
+        color: red;
         text-align: center;
-        font-family: {selected_theme["font_family"]};
-    }}
+        font-family: 'Press Start 2P', cursive;
+    }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     """,
     unsafe_allow_html=True
 )
@@ -92,7 +75,12 @@ if st.button('Submit Guess'):
         else:
             st.write(f'Your best score is {st.session_state.best_score} attempts.')
         # Reset the game
-        st.session_state.number = random.randint(1, 100)
+        if difficulty == 'Easy (1-50)':
+            st.session_state.number = random.randint(1, 50)
+        elif difficulty == 'Medium (1-100)':
+            st.session_state.number = random.randint(1, 100)
+        else:
+            st.session_state.number = random.randint(1, 200)
         st.session_state.attempts = 0
         st.session_state.start_time = time.time()
         st.session_state.hint_provided = False
@@ -108,7 +96,12 @@ st.write(f'Best Score: {st.session_state.best_score} attempts')
 
 # Reset button to start a new game
 if st.button('Reset Game'):
-    st.session_state.number = random.randint(1, 100)
+    if difficulty == 'Easy (1-50)':
+        st.session_state.number = random.randint(1, 50)
+    elif difficulty == 'Medium (1-100)':
+        st.session_state.number = random.randint(1, 100)
+    else:
+        st.session_state.number = random.randint(1, 200)
     st.session_state.attempts = 0
     st.session_state.start_time = time.time()
     st.session_state.hint_provided = False
