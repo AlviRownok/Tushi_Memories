@@ -7,6 +7,7 @@ authors = ["AlviRownok <alvi2241998@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.11"
 streamlit = "^1.0.0"
+pillow = "^10.3.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -1,151 +1,86 @@
 import streamlit as st
+from PIL import Image
 import random
-import time
+import numpy as np
 
-# Custom CSS for styling
-st.markdown(
-    """
-    <style>
-    body {
-        background-color: black;
-        color: yellow;
-        font-family: 'Press Start 2P', cursive;
-    }
-    .title {
-        font-size: 60px;
-        color: yellow;
-        text-shadow: 2px 2px 5px blue;
-        margin-bottom: 0;
-        text-align: left;
-    }
-    .header {
-        font-size: 30px;
-        color: yellow;
-        text-shadow: 1px 1px 3px red;
-        margin-top: 0;
-        text-align: left;
-    }
-    .stSelectbox > div {
-        background-color: blue;
-        color: yellow;
-        border-radius: 10px;
-        border: 2px solid yellow;
-        font-family: 'Press Start 2P', cursive;
-        font-size: 16px;
-        padding: 10px;
-        text-align: center;
-    }
-    .stButton button {
-        background-color: blue;
-        color: yellow;
-        border-radius: 10px;
-        border: 2px solid yellow;
-        font-family: 'Press Start 2P', cursive;
-        font-size: 16px;
-        padding: 10px;
-    }
-    .stNumberInput input {
-        background-color: blue;
-        color: yellow;
-        border-radius: 10px;
-        border: 2px solid yellow;
-        font-family: 'Press Start 2P', cursive;
-        font-size: 16px;
-        padding: 5px;
-        text-align: center;
-    }
-    .hint {
-        font-size: 20px;
-        color: red;
-        text-align: center;
-        font-family: 'Press Start 2P', cursive;
-    }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    """,
-    unsafe_allow_html=True
-)
+# Function to load and prepare the image
+def load_image(image_path):
+    image = Image.open(image_path)
+    image = image.resize((400, 400))  # Resize for simplicity
+    return image
 
-# Layout
-col1, col2 = st.columns([2, 3])
+# Function to split the image into a grid
+def split_image(image, grid_size):
+    width, height = image.size
+    tile_width = width // grid_size
+    tile_height = height // grid_size
+    tiles = []
+    for i in range(grid_size):
+        row = []
+        for j in range(grid_size):
+            box = (j*tile_width, i*tile_height, (j+1)*tile_width, (i+1)*tile_height)
+            tile = image.crop(box)
+            row.append(tile)
+        tiles.append(row)
+    return tiles
 
-with col1:
-    # Title of the game
-    st.markdown('<div class="title">Tushi\'s Guess the Number Game</div>', unsafe_allow_html=True)
+# Function to shuffle the tiles
+def shuffle_tiles(tiles, grid_size):
+    tile_positions = [(i, j) for i in range(grid_size) for j in range(grid_size)]
+    random.shuffle(tile_positions)
+    empty_tile = tile_positions.pop()
+    return tile_positions, empty_tile
 
-    # Personalized header
-    st.markdown('<div class="header">Welcome, Samia Mollika Tushi!</div>', unsafe_allow_html=True)
+# Function to draw the current state of the puzzle
+def draw_puzzle(tiles, tile_positions, empty_tile, grid_size):
+    puzzle_image = Image.new('RGB', (400, 400))
+    tile_width = 400 // grid_size
+    tile_height = 400 // grid_size
+    for pos, (i, j) in zip(tile_positions, tiles):
+        if pos != empty_tile:
+            tile = tiles[i][j]
+            box = (pos[1]*tile_width, pos[0]*tile_height)
+            puzzle_image.paste(tile, box)
+    return puzzle_image
 
-with col2:
-    # Difficulty level selector with fun visual
-    difficulty = st.selectbox('Select Difficulty Level:', ['Easy (1-50)', 'Medium (1-100)', 'Hard (1-200)'], index=1, format_func=lambda x: f"🎮 {x}")
+# Initialize the game state
+if 'initialized' not in st.session_state:
+    image_path = 'C:/Users/alvirownok/Downloads/Guess_Number_Game/tushi_guess_game/Image_1.jpeg'  # Replace with your image path
+    grid_size = 8
+    image = load_image(image_path)
+    tiles = split_image(image, grid_size)
+    tile_positions, empty_tile = shuffle_tiles(tiles, grid_size)
+    st.session_state.tiles = tiles
+    st.session_state.tile_positions = tile_positions
+    st.session_state.empty_tile = empty_tile
+    st.session_state.moves = 0
+    st.session_state.initialized = True
 
-    # Generate a random number based on difficulty
-    if difficulty == 'Easy (1-50)':
-        number_to_guess = random.randint(1, 50)
-    elif difficulty == 'Medium (1-100)':
-        number_to_guess = random.randint(1, 100)
+# Display the puzzle
+puzzle_image = draw_puzzle(st.session_state.tiles, st.session_state.tile_positions, st.session_state.empty_tile, grid_size)
+st.image(puzzle_image, caption='Solve the puzzle!', use_column_width=True)
+
+# Input and move logic
+move = st.selectbox('Move tile:', ['Up', 'Down', 'Left', 'Right'])
+if st.button('Make Move'):
+    empty_i, empty_j = st.session_state.empty_tile
+    if move == 'Up' and empty_i < grid_size - 1:
+        target = (empty_i + 1, empty_j)
+    elif move == 'Down' and empty_i > 0:
+        target = (empty_i - 1, empty_j)
+    elif move == 'Left' and empty_j < grid_size - 1:
+        target = (empty_i, empty_j + 1)
+    elif move == 'Right' and empty_j > 0:
+        target = (empty_i, empty_j - 1)
     else:
-        number_to_guess = random.randint(1, 200)
+        target = None
 
-    # Session state to keep track of the number, attempts, best score, and start time
-    if 'number' not in st.session_state:
-        st.session_state.number = number_to_guess
-        st.session_state.attempts = 0
-        st.session_state.best_score = float('inf')
-        st.session_state.start_time = time.time()
-        st.session_state.hint_provided = False
+    if target:
+        target_pos = st.session_state.tile_positions.index(target)
+        empty_pos = st.session_state.tile_positions.index(st.session_state.empty_tile)
+        st.session_state.tile_positions[target_pos], st.session_state.tile_positions[empty_pos] = st.session_state.tile_positions[empty_pos], st.session_state.tile_positions[target_pos]
+        st.session_state.empty_tile = target
+        st.session_state.moves += 1
 
-    # Input from the user
-    guess = st.number_input('Enter your guess:', min_value=1, max_value=200, step=1)
-
-    # Button to submit the guess
-    if st.button('Submit Guess'):
-        st.session_state.attempts += 1
-        elapsed_time = time.time() - st.session_state.start_time
-        if guess < st.session_state.number:
-            st.write('Try a higher number!')
-        elif guess > st.session_state.number:
-            st.write('Try a lower number!')
-        else:
-            st.balloons()  # Show balloons when guessed correctly
-            st.markdown('<div class="title">🍒🍓🍍 Congratulations, Samia! 🍉🍇🍑</div>', unsafe_allow_html=True)
-            attempts = st.session_state.attempts
-            st.write(f'You guessed the number in {attempts} attempts and {elapsed_time:.2f} seconds.')
-            if attempts < st.session_state.best_score:
-                st.session_state.best_score = attempts
-                st.write('New Best Score!')
-            else:
-                st.write(f'Your best score is {st.session_state.best_score} attempts.')
-            # Reset the game
-            if difficulty == 'Easy (1-50)':
-                st.session_state.number = random.randint(1, 50)
-            elif difficulty == 'Medium (1-100)':
-                st.session_state.number = random.randint(1, 100)
-            else:
-                st.session_state.number = random.randint(1, 200)
-            st.session_state.attempts = 0
-            st.session_state.start_time = time.time()
-            st.session_state.hint_provided = False
-
-        # Provide a hint if too many attempts
-        if st.session_state.attempts > 5 and not st.session_state.hint_provided:
-            hint_range = st.session_state.number // 10 * 10
-            st.markdown(f'<div class="hint">Hint: The number is between {hint_range} and {hint_range + 10}.</div>', unsafe_allow_html=True)
-            st.session_state.hint_provided = True
-
-    # Display the best score
-    st.write(f'Best Score: {st.session_state.best_score} attempts')
-
-    # Reset button to start a new game
-    if st.button('Reset Game'):
-        if difficulty == 'Easy (1-50)':
-            st.session_state.number = random.randint(1, 50)
-        elif difficulty == 'Medium (1-100)':
-            st.session_state.number = random.randint(1, 100)
-        else:
-            st.session_state.number = random.randint(1, 200)
-        st.session_state.attempts = 0
-        st.session_state.start_time = time.time()
-        st.session_state.hint_provided = False
-        st.write('Game has been reset. Start guessing!')
+# Display the number of moves
+st.write(f'Moves: {st.session_state.moves}')
