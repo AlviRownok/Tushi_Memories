@@ -80,24 +80,25 @@ with col2:
     # Difficulty level selector with fun visual
     difficulty = st.selectbox('Select Difficulty Level:', ['Easy (1-50)', 'Medium (1-100)', 'Hard (1-200)'], index=1, format_func=lambda x: f"🎮 {x}")
 
-    # Generate a random number based on difficulty
+    # Set the range based on difficulty
     if difficulty == 'Easy (1-50)':
-        number_to_guess = random.randint(1, 50)
+        min_val, max_val = 1, 50
     elif difficulty == 'Medium (1-100)':
-        number_to_guess = random.randint(1, 100)
+        min_val, max_val = 1, 100
     else:
-        number_to_guess = random.randint(1, 200)
+        min_val, max_val = 1, 200
 
     # Session state to keep track of the number, attempts, best score, and start time
-    if 'number' not in st.session_state:
-        st.session_state.number = number_to_guess
+    if 'number' not in st.session_state or st.session_state.difficulty != difficulty:
+        st.session_state.number = random.randint(min_val, max_val)
         st.session_state.attempts = 0
         st.session_state.best_score = float('inf')
         st.session_state.start_time = time.time()
         st.session_state.hint_provided = False
+        st.session_state.difficulty = difficulty
 
     # Input from the user
-    guess = st.number_input('Enter your guess:', min_value=1, max_value=200, step=1)
+    guess = st.number_input('Enter your guess:', min_value=min_val, max_value=max_val, step=1)
 
     # Button to submit the guess
     if st.button('Submit Guess'):
@@ -118,19 +119,14 @@ with col2:
             else:
                 st.write(f'Your best score is {st.session_state.best_score} attempts.')
             # Reset the game
-            if difficulty == 'Easy (1-50)':
-                st.session_state.number = random.randint(1, 50)
-            elif difficulty == 'Medium (1-100)':
-                st.session_state.number = random.randint(1, 100)
-            else:
-                st.session_state.number = random.randint(1, 200)
+            st.session_state.number = random.randint(min_val, max_val)
             st.session_state.attempts = 0
             st.session_state.start_time = time.time()
             st.session_state.hint_provided = False
 
         # Provide a hint if too many attempts
         if st.session_state.attempts > 5 and not st.session_state.hint_provided:
-            hint_range = st.session_state.number // 10 * 10
+            hint_range = (st.session_state.number // 10) * 10
             st.markdown(f'<div class="hint">Hint: The number is between {hint_range} and {hint_range + 10}.</div>', unsafe_allow_html=True)
             st.session_state.hint_provided = True
 
@@ -139,12 +135,7 @@ with col2:
 
     # Reset button to start a new game
     if st.button('Reset Game'):
-        if difficulty == 'Easy (1-50)':
-            st.session_state.number = random.randint(1, 50)
-        elif difficulty == 'Medium (1-100)':
-            st.session_state.number = random.randint(1, 100)
-        else:
-            st.session_state.number = random.randint(1, 200)
+        st.session_state.number = random.randint(min_val, max_val)
         st.session_state.attempts = 0
         st.session_state.start_time = time.time()
         st.session_state.hint_provided = False
