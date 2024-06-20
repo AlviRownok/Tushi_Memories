@@ -16,16 +16,14 @@ def split_image(image, grid_size):
     tile_height = height // grid_size
     tiles = []
     for i in range(grid_size):
-        row = []
         for j in range(grid_size):
             box = (j*tile_width, i*tile_height, (j+1)*tile_width, (i+1)*tile_height)
             tile = image.crop(box)
-            row.append(tile)
-        tiles.append(row)
+            tiles.append(tile)
     return tiles
 
 # Function to shuffle the tiles
-def shuffle_tiles(tiles, grid_size):
+def shuffle_tiles(grid_size):
     tile_positions = [(i, j) for i in range(grid_size) for j in range(grid_size)]
     random.shuffle(tile_positions)
     empty_tile = tile_positions.pop()
@@ -36,9 +34,9 @@ def draw_puzzle(tiles, tile_positions, empty_tile, grid_size):
     puzzle_image = Image.new('RGB', (400, 400))
     tile_width = 400 // grid_size
     tile_height = 400 // grid_size
-    for pos, (i, j) in zip(tile_positions, tiles):
+    for index, pos in enumerate(tile_positions):
         if pos != empty_tile:
-            tile = tiles[i][j]
+            tile = tiles[index]
             box = (pos[1]*tile_width, pos[0]*tile_height)
             puzzle_image.paste(tile, box)
     return puzzle_image
@@ -49,7 +47,7 @@ if 'initialized' not in st.session_state:
     grid_size = 8
     image = load_image(image_path)
     tiles = split_image(image, grid_size)
-    tile_positions, empty_tile = shuffle_tiles(tiles, grid_size)
+    tile_positions, empty_tile = shuffle_tiles(grid_size)
     st.session_state.tiles = tiles
     st.session_state.tile_positions = tile_positions
     st.session_state.empty_tile = empty_tile
@@ -57,18 +55,18 @@ if 'initialized' not in st.session_state:
     st.session_state.initialized = True
 
 # Display the puzzle
-puzzle_image = draw_puzzle(st.session_state.tiles, st.session_state.tile_positions, st.session_state.empty_tile, grid_size)
+puzzle_image = draw_puzzle(st.session_state.tiles, st.session_state.tile_positions, st.session_state.empty_tile, 8)
 st.image(puzzle_image, caption='Solve the puzzle!', use_column_width=True)
 
 # Input and move logic
 move = st.selectbox('Move tile:', ['Up', 'Down', 'Left', 'Right'])
 if st.button('Make Move'):
     empty_i, empty_j = st.session_state.empty_tile
-    if move == 'Up' and empty_i < grid_size - 1:
+    if move == 'Up' and empty_i < 7:
         target = (empty_i + 1, empty_j)
     elif move == 'Down' and empty_i > 0:
         target = (empty_i - 1, empty_j)
-    elif move == 'Left' and empty_j < grid_size - 1:
+    elif move == 'Left' and empty_j < 7:
         target = (empty_i, empty_j + 1)
     elif move == 'Right' and empty_j > 0:
         target = (empty_i, empty_j - 1)
@@ -81,6 +79,10 @@ if st.button('Make Move'):
         st.session_state.tile_positions[target_pos], st.session_state.tile_positions[empty_pos] = st.session_state.tile_positions[empty_pos], st.session_state.tile_positions[target_pos]
         st.session_state.empty_tile = target
         st.session_state.moves += 1
+
+    # Update the puzzle image after the move
+    puzzle_image = draw_puzzle(st.session_state.tiles, st.session_state.tile_positions, st.session_state.empty_tile, 8)
+    st.image(puzzle_image, caption='Solve the puzzle!', use_column_width=True)
 
 # Display the number of moves
 st.write(f'Moves: {st.session_state.moves}')
