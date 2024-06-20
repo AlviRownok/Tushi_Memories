@@ -29,17 +29,29 @@ def shuffle_tiles(grid_size):
     return tile_positions, empty_tile
 
 # Function to draw the current state of the puzzle
-def draw_puzzle(tiles, tile_positions, empty_tile, grid_size, tile_width, tile_height):
+def draw_puzzle(tiles, tile_positions, empty_tile, grid_size, tile_width, tile_height, selected_tile):
     puzzle_image = Image.new('RGB', (400, 400))
     for index, pos in enumerate(tile_positions):
         if pos != empty_tile:
             tile = tiles[index]
             box = (pos[1] * tile_width, pos[0] * tile_height)
             puzzle_image.paste(tile, box)
+            if selected_tile == pos:
+                draw_border(puzzle_image, box, tile_width, tile_height)
     return puzzle_image
 
+# Function to draw a border around the selected tile
+def draw_border(image, box, tile_width, tile_height, color=(255, 0, 0), width=5):
+    from PIL import ImageDraw
+    draw = ImageDraw.Draw(image)
+    for i in range(width):
+        draw.rectangle(
+            [box[0] + i, box[1] + i, box[0] + tile_width - i, box[1] + tile_height - i],
+            outline=color
+        )
+
 # Function to check if a move is valid and perform the move
-def move_tile(tile_positions, empty_tile, click_pos, grid_size):
+def move_tile(tile_positions, empty_tile, click_pos):
     empty_i, empty_j = empty_tile
     click_i, click_j = click_pos
     if (abs(empty_i - click_i) == 1 and empty_j == click_j) or (abs(empty_j - click_j) == 1 and empty_i == click_i):
@@ -64,19 +76,40 @@ if 'initialized' not in st.session_state:
     st.session_state.tile_width = tile_width
     st.session_state.tile_height = tile_height
     st.session_state.initialized = True
+    st.session_state.selected_tile = None
+
+# Handle tile click events
+if 'clicked' not in st.session_state:
+    st.session_state.clicked = None
 
 # Draw the puzzle
-puzzle_image = draw_puzzle(st.session_state.tiles, st.session_state.tile_positions, st.session_state.empty_tile, st.session_state.grid_size, st.session_state.tile_width, st.session_state.tile_height)
+puzzle_image = draw_puzzle(
+    st.session_state.tiles,
+    st.session_state.tile_positions,
+    st.session_state.empty_tile,
+    st.session_state.grid_size,
+    st.session_state.tile_width,
+    st.session_state.tile_height,
+    st.session_state.selected_tile
+)
 st.image(puzzle_image, caption='Solve the puzzle!', use_column_width=True)
 
 # Capture click events
-click_position = st.empty()
-
-if st.button('Reset Game'):
-    st.session_state.initialized = False
-    st.experimental_rerun()
-
-st.write(f'Moves: {st.session_state.moves}')
+if 'clicked' in st.session_state and st.session_state.clicked:
+    click_i, click_j = map(int, st.session_state.clicked)
+    click_pos = (click_i, click_j)
+    if st.session_state.selected_tile:
+        # Move tile if valid
+        st.session_state.empty_tile, st.session_state.tile_positions = move_tile(
+            st.session_state.tile_positions,
+            st.session_state.empty_tile,
+            st.session_state.selected_tile
+        )
+        st.session_state.selected_tile = None
+        st.session_state.moves += 1
+    elif click_pos in st.session_state.tile_positions:
+        st.session_state.selected_tile = click_pos
+    st.session_state.clicked = None
 
 # JavaScript to capture click events
 st.markdown("""
@@ -92,11 +125,14 @@ st.markdown("""
     </script>
     """, unsafe_allow_html=True)
 
-# Receive the click position
-st.session_state.clicked = st.experimental_get_query_params().get('click_pos')
-if st.session_state.clicked:
-    click_i, click_j = map(int, st.session_state.clicked[0].split(','))
-    click_pos = (click_i, click_j)
-    st.session_state.empty_tile, st.session_state.tile_positions = move_tile(st.session_state.tile_positions, st.session_state.empty_tile, click_pos, st.session_state.grid_size)
-    st.session_state.moves += 1
+# Capture the click position from JavaScript
+click_position = st.empty()
+st.session_state.clicked = click_position.text_input("Click position:", "")
+
+# Reset game button
+if st.button('Reset Game'):
+    st.session_state.initialized = False
     st.experimental_rerun()
+
+# Display the number of moves
+st.write(f'Moves: {st.session_state.moves}')
