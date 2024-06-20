@@ -45,7 +45,7 @@ def draw_puzzle(tiles, tile_positions, empty_tile, grid_size):
 
 # Initialize the game state
 if 'initialized' not in st.session_state:
-    image_path = 'C:/Users/alvirownok/Downloads/Guess_Number_Game/tushi_guess_game/Image_1.jpeg'  # Replace with your image path
+    image_path = 'tushi_guess_game/Image_1.jpeg'  # Ensure this path is correct
     grid_size = 8
     image = load_image(image_path)
     tiles = split_image(image, grid_size)
