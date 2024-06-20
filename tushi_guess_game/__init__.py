@@ -1,111 +1,78 @@
 import streamlit as st
 from PIL import Image
+import numpy as np
 import random
 
-# Function to load and prepare the image
+# Load and split the image
 def load_image(image_path):
-    image = Image.open(image_path)
-    image = image.resize((400, 400))  # Resize for simplicity
-    return image
+    img = Image.open(image_path)
+    return img
 
-# Function to split the image into a grid
-def split_image(image, grid_size):
-    width, height = image.size
-    tile_width = width // grid_size
-    tile_height = height // grid_size
-    tiles = []
+def split_image(img, grid_size):
+    w, h = img.size
+    piece_w, piece_h = w // grid_size, h // grid_size
+    pieces = []
     for i in range(grid_size):
+        row = []
         for j in range(grid_size):
-            box = (j * tile_width, i * tile_height, (j + 1) * tile_width, (i + 1) * tile_height)
-            tile = image.crop(box)
-            tiles.append(tile)
-    return tiles, tile_width, tile_height
+            piece = img.crop((j * piece_w, i * piece_h, (j + 1) * piece_w, (i + 1) * piece_h))
+            row.append(piece)
+        pieces.append(row)
+    return pieces
 
-# Function to shuffle the tiles
-def shuffle_tiles(grid_size):
-    tile_positions = [(i, j) for i in range(grid_size) for j in range(grid_size)]
-    random.shuffle(tile_positions)
-    return tile_positions
+def create_puzzle(grid_size):
+    puzzle = list(range(grid_size * grid_size))
+    random.shuffle(puzzle)
+    return np.array(puzzle).reshape((grid_size, grid_size))
 
-# Function to draw the current state of the puzzle
-def draw_puzzle(tiles, tile_positions, grid_size, tile_width, tile_height):
-    puzzle_image = Image.new('RGB', (400, 400))
-    for index, pos in enumerate(tile_positions):
-        tile = tiles[index]
-        box = (pos[1] * tile_width, pos[0] * tile_height)
-        puzzle_image.paste(tile, box)
-    return puzzle_image
+def find_empty(puzzle):
+    return np.argwhere(puzzle == 0)[0]
 
-# Function to check if the puzzle is solved
-def is_solved(tile_positions):
-    for i in range(len(tile_positions)):
-        if tile_positions[i] != divmod(i, 4):
-            return False
-    return True
+def move_piece(puzzle, position):
+    empty = find_empty(puzzle)
+    if (abs(empty[0] - position[0]) == 1 and empty[1] == position[1]) or \
+       (abs(empty[1] - position[1]) == 1 and empty[0] == position[0]):
+        puzzle[empty[0], empty[1]], puzzle[position[0], position[1]] = \
+        puzzle[position[0], position[1]], puzzle[empty[0], empty[1]]
+    return puzzle
 
-# Initialize the game state
-if 'initialized' not in st.session_state:
-    image_path = 'tushi_guess_game/Image_1.jpeg'  # Ensure this path is correct
-    grid_size = 4  # 4x4 grid
-    image = load_image(image_path)
-    tiles, tile_width, tile_height = split_image(image, grid_size)
-    tile_positions = shuffle_tiles(grid_size)
-    st.session_state.tiles = tiles
-    st.session_state.tile_positions = tile_positions
-    st.session_state.grid_size = grid_size
-    st.session_state.tile_width = tile_width
-    st.session_state.tile_height = tile_height
-    st.session_state.selected_tile = None
-    st.session_state.initialized = True
+def check_puzzle(puzzle):
+    return np.array_equal(puzzle, np.arange(puzzle.size).reshape(puzzle.shape))
 
-# Draw the puzzle
-puzzle_image = draw_puzzle(
-    st.session_state.tiles,
-    st.session_state.tile_positions,
-    st.session_state.grid_size,
-    st.session_state.tile_width,
-    st.session_state.tile_height
-)
-st.image(puzzle_image, caption='Solve the puzzle!', use_column_width=True)
+# Game settings
+grid_size = 3
+image_path = "tushi_guess_game/Image_1.jpeg"
 
-# Capture click events
-clicked_tile = st.text_input("Click position:", "")
+# Load and split image
+img = load_image(image_path)
+pieces = split_image(img, grid_size)
 
-if clicked_tile:
-    click_i, click_j = map(int, clicked_tile.split(","))
-    click_pos = (click_i, click_j)
-    if st.session_state.selected_tile:
-        # Swap tiles
-        selected_index = st.session_state.tile_positions.index(st.session_state.selected_tile)
-        click_index = st.session_state.tile_positions.index(click_pos)
-        st.session_state.tile_positions[selected_index], st.session_state.tile_positions[click_index] = \
-            st.session_state.tile_positions[click_index], st.session_state.tile_positions[selected_index]
-        st.session_state.selected_tile = None
-    else:
-        st.session_state.selected_tile = click_pos
+# Initialize puzzle state
+if 'puzzle' not in st.session_state:
+    st.session_state.puzzle = create_puzzle(grid_size)
 
-    # Check if the puzzle is solved
-    if is_solved(st.session_state.tile_positions):
-        st.success("Congratulations! You solved the puzzle!")
+st.title("Sliding Puzzle Game")
+st.write("Arrange the pieces to solve the puzzle!")
 
-# JavaScript to capture click events
-st.markdown("""
-    <script>
-    const puzzleImage = document.getElementsByTagName("img")[0];
-    puzzleImage.onclick = function(event) {
-        const rect = puzzleImage.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        const click_pos = [Math.floor(y / (rect.height / 4)), Math.floor(x / (rect.width / 4))];
-        const click_pos_str = click_pos.join(",");
-        const input = document.getElementsByTagName("input")[0];
-        input.value = click_pos_str;
-        input.dispatchEvent(new Event('change'));
-    };
-    </script>
-    """, unsafe_allow_html=True)
+# Display puzzle
+puzzle = st.session_state.puzzle
+cols = st.columns(grid_size)
+for i in range(grid_size):
+    for j in range(grid_size):
+        piece_idx = puzzle[i, j]
+        if piece_idx != 0:  # Skip the empty piece
+            cols[j].image(pieces[piece_idx // grid_size][piece_idx % grid_size])
 
-# Reset game button
-if st.button('Reset Game'):
-    st.session_state.initialized = False
-    st.experimental_rerun()
+# Allow piece movement
+if st.button("Shuffle"):
+    st.session_state.puzzle = create_puzzle(grid_size)
+
+for i in range(grid_size):
+    for j in range(grid_size):
+        if cols[j].button("", key=f"{i}-{j}", on_click=move_piece, args=(st.session_state.puzzle, (i, j))):
+            st.experimental_rerun()
+
+# Check if solved
+if check_puzzle(st.session_state.puzzle):
+    st.balloons()
+    st.write("Congratulations! You've solved the puzzle!")
