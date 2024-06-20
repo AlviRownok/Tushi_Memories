@@ -21,23 +21,26 @@ def split_image(img, grid_size):
     return pieces
 
 def create_puzzle(grid_size):
-    puzzle = list(range(grid_size * grid_size))
+    puzzle = list(range(1, grid_size * grid_size)) + [0]
     random.shuffle(puzzle)
     return np.array(puzzle).reshape((grid_size, grid_size))
 
 def find_empty(puzzle):
     return np.argwhere(puzzle == 0)[0]
 
+def is_adjacent(empty, position):
+    return (abs(empty[0] - position[0]) == 1 and empty[1] == position[1]) or \
+           (abs(empty[1] - position[1]) == 1 and empty[0] == position[0])
+
 def move_piece(puzzle, position):
     empty = find_empty(puzzle)
-    if (abs(empty[0] - position[0]) == 1 and empty[1] == position[1]) or \
-       (abs(empty[1] - position[1]) == 1 and empty[0] == position[0]):
+    if is_adjacent(empty, position):
         puzzle[empty[0], empty[1]], puzzle[position[0], position[1]] = \
         puzzle[position[0], position[1]], puzzle[empty[0], empty[1]]
     return puzzle
 
 def check_puzzle(puzzle):
-    return np.array_equal(puzzle, np.arange(puzzle.size).reshape(puzzle.shape))
+    return np.array_equal(puzzle, np.arange(1, puzzle.size + 1).reshape(puzzle.shape))
 
 # Game settings
 grid_size = 3
@@ -56,21 +59,22 @@ st.write("Arrange the pieces to solve the puzzle!")
 
 # Display puzzle
 puzzle = st.session_state.puzzle
+empty = find_empty(puzzle)
 cols = st.columns(grid_size)
+
 for i in range(grid_size):
     for j in range(grid_size):
         piece_idx = puzzle[i, j]
         if piece_idx != 0:  # Skip the empty piece
-            cols[j].image(pieces[piece_idx // grid_size][piece_idx % grid_size])
+            with cols[j]:
+                if is_adjacent(empty, (i, j)):
+                    if st.button('', key=f'{i}-{j}', on_click=move_piece, args=(st.session_state.puzzle, (i, j))):
+                        st.experimental_rerun()
+                st.image(pieces[(piece_idx - 1) // grid_size][(piece_idx - 1) % grid_size], use_column_width=True)
 
-# Allow piece movement
+# Shuffle button
 if st.button("Shuffle"):
     st.session_state.puzzle = create_puzzle(grid_size)
-
-for i in range(grid_size):
-    for j in range(grid_size):
-        if cols[j].button("", key=f"{i}-{j}", on_click=move_piece, args=(st.session_state.puzzle, (i, j))):
-            st.experimental_rerun()
 
 # Check if solved
 if check_puzzle(st.session_state.puzzle):
