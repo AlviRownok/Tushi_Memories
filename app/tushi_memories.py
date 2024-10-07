@@ -2,91 +2,58 @@ import streamlit as st
 import pandas as pd
 import os
 
-# Create or append to the CSV file
+# Define the CSV file path (adjust to your local path or Streamlit Cloud storage)
 CSV_FILE = 'tushi_memories.csv'
 
-def save_to_csv(data, file_path=CSV_FILE):
-    # Check if the file exists
+# Get the developer password from secrets
+developer_password = st.secrets["developer_password"]
+
+# Function to load or create a CSV file
+def load_or_create_csv(file_path):
     if os.path.exists(file_path):
-        # If exists, append the new data
-        df = pd.read_csv(file_path)
-        df = df.append(data, ignore_index=True)
+        return pd.read_csv(file_path)
     else:
-        # If file does not exist, create a new one with the new data
-        df = pd.DataFrame([data])
+        df = pd.DataFrame(columns=["Name", "Surname", "Years Known", "Memory"])
+        df.to_csv(file_path, index=False)
+        return df
+
+# Function to save a new memory to the CSV
+def save_memory(file_path, name, surname, years_known, memory):
+    df = pd.read_csv(file_path)
+    new_entry = {"Name": name, "Surname": surname, "Years Known": years_known, "Memory": memory}
+    df = df.append(new_entry, ignore_index=True)
     df.to_csv(file_path, index=False)
 
-# Custom CSS for styling
-st.markdown(
-    """
-    <style>
-    body {
-        background-color: black;
-        color: yellow;
-        font-family: 'Press Start 2P', cursive;
-    }
-    .title {
-        font-size: 40px;
-        color: yellow;
-        text-shadow: 2px 2px 5px blue;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    .header {
-        font-size: 20px;
-        color: yellow;
-        text-shadow: 1px 1px 3px red;
-        text-align: left;
-        margin-bottom: 20px;
-    }
-    .stButton button {
-        background-color: blue;
-        color: yellow;
-        border-radius: 10px;
-        border: 2px solid yellow;
-        font-family: 'Press Start 2P', cursive;
-        padding: 10px;
-    }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    """,
-    unsafe_allow_html=True
-)
+# Load or create the CSV
+memories_df = load_or_create_csv(CSV_FILE)
 
-# Layout and Title
-st.markdown('<div class="title">Memories with Tushi</div>', unsafe_allow_html=True)
+# App title
+st.title("Memories with Tushi")
 
-# Form to input user details
-with st.form(key='memory_form'):
-    name = st.text_input("First Name", "")
-    surname = st.text_input("Surname", "")
-    years_known = st.number_input("How many years have you known Tushi?", min_value=0, max_value=100, step=1)
-    memory = st.text_area("Share a Memory about Tushi (max 500 words)", "", max_chars=500)
-    
-    submit_button = st.form_submit_button(label='OK')
+# Input fields for user submissions
+name = st.text_input("First Name")
+surname = st.text_input("Surname")
+years_known = st.number_input("How many years have you known Tushi?", min_value=0, max_value=100, step=1)
+memory = st.text_area("Share a memory (max 500 words)", max_chars=500)
 
-# When the form is submitted
-if submit_button:
+# Button for form submission
+if st.button("OK"):
+    # Ensure all fields are filled out
     if name and surname and memory:
-        # Save the entry to CSV
-        new_entry = {
-            'Name': name,
-            'Surname': surname,
-            'Years_Known': years_known,
-            'Memory': memory
-        }
-        save_to_csv(new_entry)
-
-        # Confirmation message
-        st.success(f"Thank you {name} {surname} for sharing your memory!")
-        
-        # Clear the form fields (this will happen because Streamlit reloads the page after form submission)
+        save_memory(CSV_FILE, name, surname, years_known, memory)
+        # Show confirmation message
+        st.success("Your memory has been recorded! Thank you!")
+        # Reset form inputs by clearing the values after submission
         st.experimental_rerun()
     else:
-        st.error("Please fill in all fields before submitting!")
+        st.error("Please fill out all the fields!")
 
-# If file exists, show existing entries
-if os.path.exists(CSV_FILE):
-    st.markdown("### Previous Entries:")
-    entries_df = pd.read_csv(CSV_FILE)
-    st.dataframe(entries_df)
+# Developer-only CSV download section
+st.write(" ")
+st.write("---")
+st.write("**Developer Access**")
+developer_password_input = st.text_input("Enter developer password to download CSV", type="password")
+if developer_password_input == developer_password:
+    st.download_button("Download CSV", data=memories_df.to_csv(index=False), file_name='tushi_memories.csv')
+else:
+    st.warning("Enter the correct password to download the CSV file.")
