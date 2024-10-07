@@ -5,9 +5,6 @@ import os
 # Define the CSV file path (adjust to your local path or Streamlit Cloud storage)
 CSV_FILE = 'tushi_memories.csv'
 
-# Get the developer password from secrets
-developer_password = st.secrets["developer_password"]
-
 # Function to load or create a CSV file
 def load_or_create_csv(file_path):
     if os.path.exists(file_path):
@@ -20,8 +17,8 @@ def load_or_create_csv(file_path):
 # Function to save a new memory to the CSV
 def save_memory(file_path, name, surname, years_known, memory):
     df = pd.read_csv(file_path)
-    new_entry = {"Name": name, "Surname": surname, "Years Known": years_known, "Memory": memory}
-    df = df.append(new_entry, ignore_index=True)
+    new_entry = pd.DataFrame([{"Name": name, "Surname": surname, "Years Known": years_known, "Memory": memory}])
+    df = pd.concat([df, new_entry], ignore_index=True)  # Use concat instead of append
     df.to_csv(file_path, index=False)
 
 # Load or create the CSV
@@ -53,6 +50,7 @@ st.write(" ")
 st.write("---")
 st.write("**Developer Access**")
 developer_password_input = st.text_input("Enter developer password to download CSV", type="password")
+developer_password = st.secrets["developer_password"]
 if developer_password_input == developer_password:
     st.download_button("Download CSV", data=memories_df.to_csv(index=False), file_name='tushi_memories.csv')
 else:
