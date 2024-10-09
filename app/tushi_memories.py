@@ -37,7 +37,7 @@ st.title("Memories with Tushi")
 name = st.text_input("First Name")
 surname = st.text_input("Surname")
 years_known = st.number_input("How many years have you known Tushi?", min_value=0, max_value=100, step=1)
-memory = st.text_area("Share a memory (max 500 words)", max_chars=500)
+memory = st.text_area("Share a memory (max 1000 words)", max_chars=1000)
 
 # Button for form submission
 if st.button("OK"):
