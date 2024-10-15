@@ -83,6 +83,7 @@ typing_extensions==4.12.2
 tzdata==2024.1
 urllib3==2.2.1
 watchdog==5.0.3
+wheel==0.44.0
 wxPython @ file:///C:/src/osgeo4w/src/python3-wxpython/wxPython-4.2.1/dist/wxPython-4.2.1-cp312-cp312-win_amd64.whl#sha256=42e6d15b92657eeb473f244ea0466e86692a7e716d52b0d524c66b32f176ebd6
 xlrd==2.0.1
 xlwt==1.3.0
