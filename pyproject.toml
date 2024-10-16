@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "tushi memories"
+version = "0.1.0"
+description = "Tushi Memories is a platform to share the best memories you have with this lovely soul. So that we can cherish these memories with her, always."
+authors = ["AlviRownok <alvi2241998@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.13"  # Limiting the Python version up to 3.12 since you are using 3.12
+streamlit = {version = "^1.38.0", python = ">=3.8, !=3.9.7, <3.13"}
+pillow = "^10.3.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
