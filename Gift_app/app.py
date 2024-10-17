@@ -19,7 +19,7 @@ local_css("Gift_app/style.css")
 # Read the CSV file
 @st.cache_data
 def load_data():
-    data = pd.read_csv('data.csv')
+    data = pd.read_csv('Gift_app/data.csv')
     return data
 
 df = load_data()
